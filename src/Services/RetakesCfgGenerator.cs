@@ -39,10 +39,11 @@ public sealed class RetakesCfgGenerator
 
       if (!Directory.Exists(cfgDir)) Directory.CreateDirectory(cfgDir);
 
-      if (!File.Exists(cfgPath))
-        GenerateCfgFile(cfgPath, freezeTime);
-      else
-        UpdateFreezeTime(cfgPath, freezeTime);
+      var changeableSection = File.Exists(cfgPath)
+        ? ExtractChangeableSection(cfgPath) ?? DefaultChangeableSection
+        : DefaultChangeableSection;
+
+      GenerateCfgFile(cfgPath, freezeTime, changeableSection);
 
       void ExecuteConfig()
       {
@@ -66,22 +67,43 @@ public sealed class RetakesCfgGenerator
     }
   }
 
-  private static void UpdateFreezeTime(string cfgPath, int freezeTime)
+  private const string DefaultChangeableSection = """
+      mp_roundtime_defuse 0.25
+      mp_autokick 0
+      mp_c4timer 40
+      mp_friendlyfire 0
+      mp_round_restart_delay 2
+      sv_talk_enemy_dead 0
+      sv_talk_enemy_living 0
+      sv_deadtalk 1
+      spec_replay_enable 0
+      mp_maxrounds 30
+      mp_match_end_restart 0
+      mp_timelimit 0
+      mp_match_restart_delay 10
+      mp_death_drop_gun 1
+      mp_death_drop_defuser 1
+      mp_death_drop_grenade 1
+      mp_warmuptime 15
+      """;
+
+  private static string? ExtractChangeableSection(string cfgPath)
   {
     var lines = File.ReadAllLines(cfgPath);
+    var start = -1;
     for (var i = 0; i < lines.Length; i++)
     {
-      var trimmed = lines[i].TrimStart();
-      if (trimmed.StartsWith("mp_freezetime", StringComparison.OrdinalIgnoreCase))
+      if (lines[i].TrimStart().StartsWith("// Things you can change", StringComparison.OrdinalIgnoreCase))
       {
-        lines[i] = $"mp_freezetime {freezeTime}";
+        start = i;
         break;
       }
     }
-    File.WriteAllLines(cfgPath, lines);
+    if (start < 0) return null;
+    return string.Join("\n", lines[start..]);
   }
 
-  private void GenerateCfgFile(string cfgPath, int freezeTime)
+  private void GenerateCfgFile(string cfgPath, int freezeTime, string changeableSection)
   {
     var buyMenuEnabled = _core.ConVar.Find<bool>("retakes_buymenu_enabled")?.Value ?? false;
     var pistol = _core.ConVar.Find<int>("retakes_buymenu_money_pistol")?.Value ?? 800;
@@ -141,27 +163,10 @@ public sealed class RetakesCfgGenerator
       mp_max_armor 0
       mp_warmup_pausetimer 0
       sv_skirmish_id 0
-
-      // Things you can change, and may want to:
-      mp_roundtime_defuse 0.25
-      mp_autokick 0
-      mp_c4timer 40
       mp_freezetime {freezeTime}
-      mp_friendlyfire 0
-      mp_round_restart_delay 2
-      sv_talk_enemy_dead 0
-      sv_talk_enemy_living 0
-      sv_deadtalk 1
-      spec_replay_enable 0
-      mp_maxrounds 30
-      mp_match_end_restart 0
-      mp_timelimit 0
-      mp_match_restart_delay 10
-      mp_death_drop_gun 1
-      mp_death_drop_defuser 1
-      mp_death_drop_grenade 1
-      mp_warmuptime 15
-
+      // Things you can change, and may want to:
+      {changeableSection}
+      
       echo [Retakes] Config loaded!
       """;
 
