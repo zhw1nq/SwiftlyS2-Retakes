@@ -95,12 +95,30 @@ public sealed class RetakesCfgGenerator
     {
       if (lines[i].TrimStart().StartsWith("// Things you can change", StringComparison.OrdinalIgnoreCase))
       {
-        start = i;
+        start = i + 1; // Skip the header line itself
         break;
       }
     }
-    if (start < 0) return null;
-    return string.Join("\n", lines[start..]);
+    if (start < 0 || start >= lines.Length) return null;
+
+    // Find the end: stop before "echo [Retakes] Config loaded!" or empty trailing lines
+    var end = lines.Length;
+    for (var i = lines.Length - 1; i >= start; i--)
+    {
+      if (lines[i].TrimStart().StartsWith("echo [Retakes] Config loaded!", StringComparison.OrdinalIgnoreCase))
+      {
+        end = i;
+      }
+      else if (!string.IsNullOrWhiteSpace(lines[i]))
+      {
+        break;
+      }
+    }
+
+    var section = lines[start..end];
+    // If the section is effectively empty, return null to use the default
+    if (section.All(string.IsNullOrWhiteSpace)) return null;
+    return string.Join("\n", section);
   }
 
   private void GenerateCfgFile(string cfgPath, int freezeTime, string changeableSection)
