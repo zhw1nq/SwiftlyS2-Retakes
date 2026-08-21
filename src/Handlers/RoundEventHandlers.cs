@@ -182,12 +182,12 @@ public sealed class RoundEventHandlers
       var loc = core.Translation.GetPlayerLocalizer(player);
       if (!shouldSpawnSmokes || chosenScenario is null)
       {
-        _messages.Chat(player, loc["smokes.scenario.none"].Colored());
+        _messages.Chat(player, loc["smokes.scenario.none"]);
         continue;
       }
 
       var scenarioName = string.IsNullOrWhiteSpace(chosenScenario.Name) ? "Unnamed" : chosenScenario.Name.Trim();
-      _messages.Chat(player, loc["smokes.scenario.active", scenarioName].Colored());
+      _messages.Chat(player, loc["smokes.scenario.active", scenarioName]);
     }
   }
 

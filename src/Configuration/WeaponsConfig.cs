@@ -7,32 +7,44 @@ public sealed class WeaponsConfig
 {
   public bool BuyMenuEnabled { get; set; } = true;
 
-  public DefaultWeaponsConfig Defaults { get; set; } = new();
-
-  public List<string> Pistols { get; set; } = new()
+  public DefaultWeaponsConfig Defaults { get; set; } = new()
   {
-    "weapon_glock",
-    "weapon_usp_silencer",
-    "weapon_hkp2000",
-    "weapon_p250",
-    "weapon_fiveseven",
-    "weapon_tec9",
-    "weapon_cz75a",
-    "weapon_deagle",
-    "weapon_revolver",
-    "weapon_elite",
+    Pistol = new()
+    {
+      Primary = new() { T = "weapon_glock", Ct = "weapon_usp_silencer" },
+      Secondary = new() { T = "weapon_glock", Ct = "weapon_usp_silencer" }
+    },
+    HalfBuy = new()
+    {
+      Primary = new() { T = "weapon_mac10", Ct = "weapon_mp9" },
+      Secondary = new() { T = "weapon_glock", Ct = "weapon_usp_silencer" }
+    },
+    FullBuy = new()
+    {
+      Primary = new() { T = "weapon_ak47", Ct = "weapon_m4a1_silencer" },
+      Secondary = new() { T = "weapon_glock", Ct = "weapon_usp_silencer" }
+    }
+  };
+
+  public RoundWeaponsConfig Pistols { get; set; } = new()
+  {
+    All = new() { "weapon_elite", "weapon_deagle", "weapon_revolver", "weapon_cz75a", "weapon_p250" },
+    Ct = new() { "weapon_fiveseven", "weapon_usp_silencer", "weapon_hkp2000" },
+    T = new() { "weapon_glock", "weapon_tec9" }
   };
 
   public RoundWeaponsConfig HalfBuy { get; set; } = new()
   {
-    T = new() { "weapon_galilar", "weapon_mac10", "weapon_mp7", "weapon_ump45", "weapon_nova", "weapon_xm1014", "weapon_sawedoff" },
-    Ct = new() { "weapon_famas", "weapon_mp9", "weapon_mp7", "weapon_ump45", "weapon_nova", "weapon_xm1014", "weapon_mag7" },
+    All = new(),
+    T = new() { "weapon_mac10", "weapon_mp7", "weapon_bizon", "weapon_mp5sd", "weapon_p90", "weapon_ump45" },
+    Ct = new() { "weapon_mp7", "weapon_mp9", "weapon_bizon", "weapon_mp5sd", "weapon_p90", "weapon_ump45" },
   };
 
   public RoundWeaponsConfig FullBuy { get; set; } = new()
   {
-    T = new() { "weapon_ak47", "weapon_sg556" },
-    Ct = new() { "weapon_m4a1", "weapon_m4a1_silencer", "weapon_aug" },
+    All = new(),
+    T = new() { "weapon_ak47", "weapon_galilar", "weapon_sg556" },
+    Ct = new() { "weapon_aug", "weapon_famas", "weapon_m4a1", "weapon_m4a1_silencer" },
   };
 }
 

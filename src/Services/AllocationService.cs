@@ -21,8 +21,6 @@ public sealed class AllocationService : IAllocationService
   public RoundType? CurrentRoundType { get; private set; }
   public bool InstantSwapEnabled => _instantSwap.Value;
 
-  private bool _stripWeaponsDisabled;
-
   private readonly IConVar<bool> _enabled;
   private readonly IConVar<string> _roundType;
   private readonly IConVar<int> _pistolPct;
@@ -53,8 +51,9 @@ public sealed class AllocationService : IAllocationService
   private readonly IConVar<bool> _stripRemove;
   private readonly IRetakesStateService _state;
   private readonly IDamageReportService _damageReport;
+  private readonly ISpawnManager _spawnManager;
 
-  public AllocationService(ISwiftlyCore core, ILogger logger, Random random, IPlayerPreferencesService prefs, IRetakesConfigService config, IRetakesStateService state, IDamageReportService damageReport)
+  public AllocationService(ISwiftlyCore core, ILogger logger, Random random, IPlayerPreferencesService prefs, IRetakesConfigService config, IRetakesStateService state, IDamageReportService damageReport, ISpawnManager spawnManager)
   {
     _core = core;
     _logger = logger;
@@ -63,6 +62,7 @@ public sealed class AllocationService : IAllocationService
     _config = config;
     _state = state;
     _damageReport = damageReport;
+    _spawnManager = spawnManager;
 
     _enabled = core.ConVar.CreateOrFind("retakes_allocation_enabled", "Enable weapon allocation", true);
     _roundType = core.ConVar.CreateOrFind("retakes_round_type", "Round type: random|pistol|half|full|sequence", "random");
@@ -257,7 +257,7 @@ public sealed class AllocationService : IAllocationService
 
     var team = (Team)player.Controller.TeamNum;
 
-    if (_stripWeapons.Value && !_stripWeaponsDisabled)
+    if (_stripWeapons.Value)
     {
       TryStripWeapons(pawn);
     }
@@ -284,6 +284,26 @@ public sealed class AllocationService : IAllocationService
         {
           itemServices.GiveItem("item_defuser");
         }
+      }
+    }
+    else if (team == Team.T && !_config.Config.Bomb.AutoPlant)
+    {
+      var isPlanter = false;
+      if (_spawnManager.TryGetAssignedPlanter(out var planterSteamId, out _))
+      {
+        isPlanter = player.SteamID == planterSteamId;
+      }
+      else
+      {
+        var tPlayers = _core.PlayerManager.GetAllPlayers()
+          .Where(p => p is not null && p.IsValid && (Team)p.Controller.TeamNum == Team.T)
+          .ToList();
+        isPlanter = tPlayers.Count > 0 && tPlayers[0].SteamID == player.SteamID;
+      }
+
+      if (isPlanter)
+      {
+        itemServices.GiveItem("weapon_c4");
       }
     }
 
@@ -323,7 +343,7 @@ public sealed class AllocationService : IAllocationService
       }
       else
       {
-        var allowed = _config.Config.Weapons.Pistols;
+        var allowed = GetAllowedPistols(team);
         secondary = allowed.Count == 0 ? null : allowed[_random.Next(allowed.Count)];
       }
 
@@ -363,8 +383,7 @@ public sealed class AllocationService : IAllocationService
     }
     catch (Exception ex)
     {
-      _stripWeaponsDisabled = true;
-      _logger.LogError(ex, "Retakes: weapon strip failed; disabling stripping for this session (set retakes_allocation_strip_weapons 0 to silence)");
+      _logger.LogWarning(ex, "Retakes: weapon strip failed for pawn");
     }
   }
 
@@ -376,11 +395,23 @@ public sealed class AllocationService : IAllocationService
     return false;
   }
 
+  private List<string> GetAllowedPistols(Team team)
+  {
+    var pistolsCfg = _config.Config.Weapons.Pistols;
+    var teamList = team == Team.CT ? pistolsCfg.Ct : pistolsCfg.T;
+    var result = new HashSet<string>(pistolsCfg.All, StringComparer.OrdinalIgnoreCase);
+    foreach (var w in teamList)
+    {
+      result.Add(w);
+    }
+    return result.ToList();
+  }
+
   private string? SelectPrimary(Team team, RoundType roundType, ulong steamId)
   {
     if (roundType == RoundType.Pistol)
     {
-      var allowed = _config.Config.Weapons.Pistols;
+      var allowed = GetAllowedPistols(team);
       var preferred = _prefs.GetPistolPrimary(steamId, team == Team.CT);
       var configuredDefault = GetConfiguredDefaultPrimary(team, roundType);
       return PreferOrDefaultOrRandom(preferred, configuredDefault, allowed);
@@ -403,8 +434,8 @@ public sealed class AllocationService : IAllocationService
 
   private string? SelectSecondary(Team team, RoundType roundType, ulong steamId)
   {
-    // All round types use the shared pistols list for secondary
-    var allowed = _config.Config.Weapons.Pistols;
+    // All round types use the team-filtered pistols list for secondary
+    var allowed = GetAllowedPistols(team);
 
     if (roundType == RoundType.HalfBuy)
     {
@@ -468,11 +499,11 @@ public sealed class AllocationService : IAllocationService
       _ => null,
     };
 
-    if (roundCfg is null) return _config.Config.Weapons.Pistols;
+    if (roundCfg is null) return GetAllowedPistols(team);
 
     var teamList = team == Team.CT ? roundCfg.Ct : roundCfg.T;
     if (teamList.Count > 0) return teamList;
-    return roundCfg.All.Count > 0 ? roundCfg.All : _config.Config.Weapons.Pistols;
+    return roundCfg.All.Count > 0 ? roundCfg.All : GetAllowedPistols(team);
   }
 
   private IEnumerable<ulong> PickAwpReceivers(List<IPlayer> players)

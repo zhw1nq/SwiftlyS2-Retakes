@@ -63,7 +63,7 @@ public sealed class InstantBombService : IInstantBombService
     {
       if (player is null || !player.IsValid) continue;
       var localizer = _core.Translation.GetPlayerLocalizer(player);
-      _messages.Chat(player, "\n" + localizer[key, args].Colored());
+      _messages.Chat(player, localizer[key, args]);
     }
   }
 
@@ -75,7 +75,7 @@ public sealed class InstantBombService : IInstantBombService
         if (defuserPlayer is not null && defuserPlayer.IsValid)
         {
           var loc = _core.Translation.GetPlayerLocalizer(defuserPlayer);
-          _messages.Chat(defuserPlayer, "\n" + loc[key, args].Colored());
+          _messages.Chat(defuserPlayer, loc[key, args]);
         }
         break;
       case DefuseMessageTarget.Team:
@@ -84,7 +84,7 @@ public sealed class InstantBombService : IInstantBombService
           if (player is null || !player.IsValid) continue;
           if ((Team)player.Controller.TeamNum != Team.CT) continue;
           var loc = _core.Translation.GetPlayerLocalizer(player);
-          _messages.Chat(player, "\n" + loc[key, args].Colored());
+          _messages.Chat(player, loc[key, args]);
         }
         break;
       default:
@@ -321,7 +321,7 @@ public sealed class InstantBombService : IInstantBombService
       if (defuserPlayer is not null)
       {
         var loc = _core.Translation.GetPlayerLocalizer(defuserPlayer);
-        _messages.Chat(defuserPlayer, "\n" + loc[key].Colored());
+        _messages.Chat(defuserPlayer, loc[key]);
       }
       return HookResult.Continue;
     }

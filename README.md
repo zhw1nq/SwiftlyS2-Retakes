@@ -464,8 +464,6 @@ Message format can be edited in `resources/translations/en.jsonc` (`damage.repor
 | Field | Default | Description |
 | :--- | :--- | :--- |
 | `Server.FreezeTimeSeconds` | `5` | Freeze time at the start of each round (seconds) |
-| `Server.ChatPrefix` | `"Retakes \|"` | Prefix shown before all plugin chat messages |
-| `Server.ChatPrefixColor` | `"green"` | Color of the chat prefix |
 | `Server.DebugEnabled` | `false` | Enable verbose debug logging |
 
 ---

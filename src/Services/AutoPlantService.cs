@@ -37,14 +37,7 @@ public sealed class AutoPlantService : IAutoPlantService
 
   public void EnforceNoC4()
   {
-    if (_autoPlant.Value && _enforceNoC4.Value)
-    {
-      _core.Engine.ExecuteCommand("mp_give_player_c4 0");
-    }
-    else
-    {
-      _core.Engine.ExecuteCommand("mp_give_player_c4 1");
-    }
+    _core.Engine.ExecuteCommand("mp_give_player_c4 0");
   }
 
   public void TryAutoPlant(Bombsite bombsite, ulong? assignedPlanterSteamId = null, Spawn? assignedPlanterSpawn = null)

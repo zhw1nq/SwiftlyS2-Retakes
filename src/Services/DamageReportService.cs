@@ -229,7 +229,7 @@ public sealed class DamageReportService : IDamageReportService
       if (opponents.Count == 0) continue;
 
       var loc = _core.Translation.GetPlayerLocalizer(viewer);
-      _messages.Chat(viewer, "\n" + loc["damage.report.header"].Colored());
+      _messages.Chat(viewer, loc["damage.report.header"]);
 
       foreach (var opp in opponents)
       {
@@ -249,7 +249,7 @@ public sealed class DamageReportService : IDamageReportService
           }
         }
 
-        _messages.Chat(viewer, loc["damage.report.line", dealtDmg, dealtHits, takenDmg, takenHits, opp.Controller.PlayerName, hp].Colored());
+        _messages.Chat(viewer, loc["damage.report.line", dealtDmg, dealtHits, takenDmg, takenHits, opp.Controller.PlayerName, hp]);
       }
     }
   }

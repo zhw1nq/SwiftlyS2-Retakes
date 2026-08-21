@@ -155,8 +155,15 @@ public sealed class CommandHandlers
     if (player is null) return key;
 
     var loc = core.Translation.GetPlayerLocalizer(player);
-    var result = args.Length == 0 ? loc[key] : loc[key, args];
-    return result.Colored();
+    var raw = args.Length == 0 ? loc[key] : loc[key, args];
+    var prefix = loc["chat.prefix"];
+
+    if (string.IsNullOrEmpty(prefix) || prefix == "{0}" || key.StartsWith("damage.") || key == "chat.prefix")
+    {
+      return raw.Colored();
+    }
+
+    return $"{prefix}{raw}".Colored();
   }
 
   private void ForceSite(ICommandContext context)
@@ -806,7 +813,7 @@ public sealed class CommandHandlers
   {
     var weapons = _config.Config.Weapons;
 
-    var hasPistols = weapons.Pistols.Count > 0;
+    var hasPistols = weapons.Pistols.All.Count > 0 || weapons.Pistols.T.Count > 0 || weapons.Pistols.Ct.Count > 0;
     var hasHalfBuy = weapons.HalfBuy.All.Count > 0 || weapons.HalfBuy.T.Count > 0 || weapons.HalfBuy.Ct.Count > 0;
     var hasFullBuy = weapons.FullBuy.All.Count > 0 || weapons.FullBuy.T.Count > 0 || weapons.FullBuy.Ct.Count > 0;
 
@@ -1031,7 +1038,8 @@ public sealed class CommandHandlers
       .Design.SetMenuTitle($"Pistols: Primary {selectedText}")
       .EnableSound();
 
-    foreach (var w in _config.Config.Weapons.Pistols)
+    var allowedPistols = GetAllowedWeaponsForMenu(RoundType.Pistol, isCt, isPrimary: true);
+    foreach (var w in allowedPistols)
     {
       var opt = new ButtonMenuOption(WeaponDisplayName(w));
       opt.Click += async (_, args) =>
@@ -1174,21 +1182,17 @@ public sealed class CommandHandlers
 
   private List<string> GetAllowedWeaponsForMenu(RoundType roundType, bool isCt, bool isPrimary)
   {
-    // Secondary always uses shared pistols list
-    if (!isPrimary)
+    // Secondary or Pistol round primary: uses pistols list filtered for team
+    if (!isPrimary || roundType == RoundType.Pistol)
     {
-      return _config.Config.Weapons.Pistols
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .OrderBy(w => w, StringComparer.OrdinalIgnoreCase)
-        .ToList();
-    }
-
-    if (roundType == RoundType.Pistol)
-    {
-      return _config.Config.Weapons.Pistols
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .OrderBy(w => w, StringComparer.OrdinalIgnoreCase)
-        .ToList();
+      var pistolsCfg = _config.Config.Weapons.Pistols;
+      var pistolTeamList = isCt ? pistolsCfg.Ct : pistolsCfg.T;
+      var pistolResult = new HashSet<string>(pistolsCfg.All, StringComparer.OrdinalIgnoreCase);
+      foreach (var w in pistolTeamList)
+      {
+        pistolResult.Add(w);
+      }
+      return pistolResult.OrderBy(w => w, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     // Primary weapons per round type
@@ -1487,11 +1491,10 @@ public sealed class CommandHandlers
     if (TryHandlePreferenceAlias(context, weaponName)) return;
 
     var isCt = (Team)player.Controller.TeamNum == Team.CT;
-    var weapons = _config.Config.Weapons;
-    var pistols = weapons.Pistols;
+    var allowedPistols = GetAllowedWeaponsForMenu(RoundType.Pistol, isCt, isPrimary: true);
 
     // Check if weapon is a pistol
-    var isPistol = pistols.Any(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
+    var isPistol = allowedPistols.Any(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
 
     // Get allowed primaries for current round type
     var allowedPrimaries = GetAllowedWeaponsForMenu(roundType, isCt, isPrimary: true);
@@ -1500,7 +1503,7 @@ public sealed class CommandHandlers
     // Resolve canonical weapon name from the config lists
     string? canonicalName = null;
     if (isPistol)
-      canonicalName = pistols.FirstOrDefault(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
+      canonicalName = allowedPistols.FirstOrDefault(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
     if (isPrimary)
       canonicalName = allowedPrimaries.FirstOrDefault(p => p.Equals(weaponName, StringComparison.OrdinalIgnoreCase));
 

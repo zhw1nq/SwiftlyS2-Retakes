@@ -182,7 +182,7 @@ public sealed class BuyMenuService : IBuyMenuService
     // Build allowed weapons list from unified config (pistols + round-specific primaries)
     _allowedWeapons = roundType switch
     {
-      RoundType.Pistol => new HashSet<string>(weapons.Pistols, StringComparer.OrdinalIgnoreCase),
+      RoundType.Pistol => BuildAllowedPistolSet(weapons.Pistols),
       RoundType.HalfBuy => BuildAllowedSet(weapons.Pistols, weapons.HalfBuy),
       RoundType.FullBuy => BuildAllowedSet(weapons.Pistols, weapons.FullBuy),
       _ => BuildAllowedSet(weapons.Pistols, weapons.FullBuy),
@@ -261,9 +261,17 @@ public sealed class BuyMenuService : IBuyMenuService
     "negev", "m249"
   };
 
-  private static HashSet<string> BuildAllowedSet(List<string> pistols, RoundWeaponsConfig round)
+  private static HashSet<string> BuildAllowedPistolSet(RoundWeaponsConfig pistols)
   {
-    var set = new HashSet<string>(pistols, StringComparer.OrdinalIgnoreCase);
+    var set = new HashSet<string>(pistols.All, StringComparer.OrdinalIgnoreCase);
+    foreach (var w in pistols.T) set.Add(w);
+    foreach (var w in pistols.Ct) set.Add(w);
+    return set;
+  }
+
+  private static HashSet<string> BuildAllowedSet(RoundWeaponsConfig pistols, RoundWeaponsConfig round)
+  {
+    var set = BuildAllowedPistolSet(pistols);
     foreach (var w in round.All) set.Add(w);
     foreach (var w in round.T) set.Add(w);
     foreach (var w in round.Ct) set.Add(w);

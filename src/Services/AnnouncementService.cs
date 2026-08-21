@@ -77,16 +77,16 @@ public sealed class AnnouncementService : IAnnouncementService
       var loc = _core.Translation.GetPlayerLocalizer(player);
 
       // Round info: send "Now" and retake/defend as separate chat messages
-      _messages.Chat(player, "\n" + loc["round.now", roundTypeText].Colored());
+      _messages.Chat(player, loc["round.now", roundTypeText]);
 
       var playerTeam = (Team)player.Controller.TeamNum;
       if (playerTeam == Team.CT)
       {
-        _messages.Chat(player, loc["round.retake", site, ctAlive, tAlive].Colored());
+        _messages.Chat(player, loc["round.retake", site, ctAlive, tAlive]);
       }
       else if (playerTeam == Team.T)
       {
-        _messages.Chat(player, loc["round.defend", site, tAlive, ctAlive].Colored());
+        _messages.Chat(player, loc["round.defend", site, tAlive, ctAlive]);
       }
 
       player.SendCenterHTML(htmlMessage);
@@ -106,7 +106,7 @@ public sealed class AnnouncementService : IAnnouncementService
       if ((Team)player.Controller.TeamNum == Team.T)
       {
         var loc = _core.Translation.GetPlayerLocalizer(player);
-        _messages.Chat(player, loc["announcement.planting_at", siteName].Colored());
+        _messages.Chat(player, loc["announcement.planting_at", siteName]);
       }
     }
   }
@@ -120,16 +120,16 @@ public sealed class AnnouncementService : IAnnouncementService
 
       if (winner == Team.CT)
       {
-        _messages.Chat(player, "\n" + loc["round.win_message", "Counter-Terrorists"].Colored());
+        _messages.Chat(player, loc["round.win_message", "Counter-Terrorists"]);
       }
       else if (winner == Team.T)
       {
-        _messages.Chat(player, "\n" + loc["round.win_message", "Terrorists"].Colored());
+        _messages.Chat(player, loc["round.win_message", "Terrorists"]);
       }
 
       if (consecutiveWins > 1)
       {
-        _messages.Chat(player, loc["round.win_streak", consecutiveWins].Colored());
+        _messages.Chat(player, loc["round.win_streak", consecutiveWins]);
       }
     }
   }
